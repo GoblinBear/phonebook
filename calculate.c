@@ -1,16 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(void)
+char append[50];
+char find[50];
+
+typedef struct _Sum{
+    double sum_a;
+    double sum_f;
+} Sum;
+
+Sum* calculate(char* filename)
 {
-    FILE *fp = fopen("orig.txt", "r");
-    FILE *output = fopen("output.txt", "w");
+    FILE *fp = fopen(filename, "r");
     if (!fp) {
         printf("ERROR opening input file orig.txt\n");
         exit(0);
     }
     int i = 0;
-    char append[50], find[50];
     double orig_sum_a = 0.0, orig_sum_f = 0.0, orig_a, orig_f;
     for (i = 0; i < 100; i++) {
         if (feof(fp)) {
@@ -24,28 +30,36 @@ int main(void)
     }
     fclose(fp);
 
-    fp = fopen("opt.txt", "r");
-    if (!fp) {
-        fp = fopen("orig.txt", "r");
-        if (!fp) {
-            printf("ERROR opening input file opt.txt\n");
-            exit(0);
-        }
+    Sum* sum = (Sum*)malloc(sizeof(Sum));
+    sum->sum_a = orig_sum_a;
+    sum->sum_f = orig_sum_f;
+
+    return sum;
+}
+
+int main(int argc, char *argv[])
+{
+    int i;
+
+    Sum* sum = (Sum*)malloc(sizeof(Sum) * (argc-1));
+    for (i = 0; i < argc-1; i++) {
+        sum[i] = *calculate(argv[i+1]);
     }
-    double opt_sum_a = 0.0, opt_sum_f = 0.0, opt_a, opt_f;
-    for (i = 0; i < 100; i++) {
-        if (feof(fp)) {
-            printf("ERROR: You need 100 datum instead of %d\n", i);
-            printf("run 'make run' longer to get enough information\n\n");
-            exit(0);
-        }
-        fscanf(fp, "%s %s %lf %lf\n", append, find, &opt_a, &opt_f);
-        opt_sum_a += opt_a;
-        opt_sum_f += opt_f;
+
+    FILE *output = fopen("output.txt", "w");
+
+    fprintf(output, "append() ");
+    for (i = 0; i < argc-1; i++) {
+        fprintf(output, "%.9lf ", sum[i].sum_a / 100.0);
     }
-    fprintf(output, "append() %lf %lf\n",orig_sum_a / 100.0, opt_sum_a / 100.0);
-    fprintf(output, "findName() %lf %lf", orig_sum_f / 100.0, opt_sum_f / 100.0);
+    fprintf(output, "\n");
+
+    fprintf(output, "findName() ");
+    for (i = 0; i < argc-1; i++) {
+        fprintf(output, "%.9lf ", sum[i].sum_f / 100.0);
+    }
+    fprintf(output, "\n");
+
     fclose(output);
-    fclose(fp);
     return 0;
 }

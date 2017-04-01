@@ -1,44 +1,45 @@
-CC ?= gcc
-CFLAGS_common ?= -Wall -std=gnu99
+CC = gcc
+CFLAGS_common = -Wall -std=gnu99
 CFLAGS_orig = -O0
 CFLAGS_opt  = -O0
 
-EXEC = phonebook_orig phonebook_opt
-
-GIT_HOOKS := .git/hooks/applied
-.PHONY: all
-all: $(GIT_HOOKS) $(EXEC)
-
-$(GIT_HOOKS):
-	@scripts/install-git-hooks
-	@echo
+EXEC = main
+all: $(EXEC)
 
 SRCS_common = main.c
 
-phonebook_orig: $(SRCS_common) phonebook_orig.c phonebook_orig.h
-	$(CC) $(CFLAGS_common) $(CFLAGS_orig) \
-		-DIMPL="\"$@.h\"" -o $@ \
-		$(SRCS_common) $@.c
+main: phonebook_orig.o phonebook_tiny.o phonebook_hash.o module.h
+	$(CC) $(CFLAGS_common) -o $@ $(SRCS_common) $^
 
-phonebook_opt: $(SRCS_common) phonebook_opt.c phonebook_opt.h
-	$(CC) $(CFLAGS_common) $(CFLAGS_opt) \
-		-DIMPL="\"$@.h\"" -o $@ \
-		$(SRCS_common) $@.c
+phonebook_orig.o: phonebook_orig.c phonebook_orig.h module.h
+	$(CC) $(CFLAGS_common) $(CFLAGS_orig) -o $@ -c $<
+
+phonebook_tiny.o: phonebook_tiny.c phonebook_tiny.h module.h
+	$(CC) $(CFLAGS_common) $(CFLAGS_opt) -o $@ -c $<
+
+phonebook_hash.o: phonebook_hash.c phonebook_hash.h module.h
+	$(CC) $(CFLAGS_common) $(CFLAGS_opt) -o $@ -c $<
 
 run: $(EXEC)
 	echo 3 | sudo tee /proc/sys/vm/drop_caches
-	watch -d -t "./phonebook_orig && echo 3 | sudo tee /proc/sys/vm/drop_caches"
+	watch -d -t "./main 0 && echo 3 | sudo tee /proc/sys/vm/drop_caches"
 
 cache-test: $(EXEC)
+	echo 1 | sudo tee /proc/sys/vm/drop_caches
 	perf stat --repeat 100 \
 		-e cache-misses,cache-references,instructions,cycles \
-		./phonebook_orig
+		./main 0
+	echo 1 | sudo tee /proc/sys/vm/drop_caches
 	perf stat --repeat 100 \
 		-e cache-misses,cache-references,instructions,cycles \
-		./phonebook_opt
+		./main 1
+	echo 1 | sudo tee /proc/sys/vm/drop_caches
+	perf stat --repeat 100 \
+		-e cache-misses,cache-references,instructions,cycles \
+		./main 2
 
 output.txt: cache-test calculate
-	./calculate
+	./calculate orig.txt tiny.txt hash.txt
 
 plot: output.txt
 	gnuplot scripts/runtime.gp
@@ -49,4 +50,4 @@ calculate: calculate.c
 .PHONY: clean
 clean:
 	$(RM) $(EXEC) *.o perf.* \
-	      	calculate orig.txt opt.txt output.txt runtime.png
+	      	calculate orig.txt tiny.txt output.txt hash.txt runtime.png

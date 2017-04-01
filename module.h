@@ -1,11 +1,8 @@
-#ifndef _PHONEBOOK_H
-#define _PHONEBOOK_H
+#ifndef _MODULE_H
+#define _MODULE_H
 
 #define MAX_LAST_NAME_SIZE 16
 
-/* TODO: After modifying the original version, uncomment the following
- * line to set OPT properly */
-// #define OPT 1
 typedef struct __PHONE_BOOK_ENTRY {
     char lastName[MAX_LAST_NAME_SIZE];
     char firstName[16];
@@ -20,7 +17,14 @@ typedef struct __PHONE_BOOK_ENTRY {
     struct __PHONE_BOOK_ENTRY *pNext;
 } entry;
 
-entry *findName(char lastName[], entry *pHead);
-entry *append(char lastName[], entry *e);
+#define ModuleMembers() \
+            void *(*findName)(char lastName[], void *pHead); \
+            void *(*append)(char lastName[], void *e); \
+            char output[16];
+
+typedef struct _Module {
+    ModuleMembers();
+} Module;
+
 
 #endif

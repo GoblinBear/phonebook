@@ -5,24 +5,46 @@
 
 #include "phonebook_orig.h"
 
-/* original version */
-entry *findName(char lastName[], entry *pHead)
+Orig* create_Orig()
 {
-    while (pHead != NULL) {
-        if (strcasecmp(lastName, pHead->lastName) == 0)
-            return pHead;
-        pHead = pHead->pNext;
+    Orig* orig = (Orig*)malloc(sizeof(Orig));
+    if (orig == NULL) {
+        return NULL;
+    }
+
+    orig->findName = Orig_findName;
+    orig->append = Orig_append;
+    strcpy(orig->output, "orig.txt");
+
+    return orig;
+}
+
+void delete_Orig(Orig* orig)
+{
+    free(orig);
+    orig = NULL;
+}
+
+void *Orig_findName(char lastName[], void *pHead)
+{
+    entry* sHead = (entry*)pHead;
+
+    while (sHead) {
+        if (strcasecmp(lastName, sHead->lastName) == 0)
+            return sHead;
+        sHead = sHead->pNext;
     }
     return NULL;
 }
 
-entry *append(char lastName[], entry *e)
+void *Orig_append(char lastName[], void *e)
 {
-    /* allocate memory for the new entry and put lastName */
-    e->pNext = (entry *) malloc(sizeof(entry));
-    e = e->pNext;
-    strcpy(e->lastName, lastName);
-    e->pNext = NULL;
+    entry* se = (entry*)e;
 
-    return e;
+    se->pNext = (entry *) malloc(sizeof(entry));
+    se = se->pNext;
+    strcpy(se->lastName, lastName);
+    se->pNext = NULL;
+
+    return se;
 }
